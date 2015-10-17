@@ -12,3 +12,4 @@
     pdbchecker.get_polar_mixt(u)
 
 ## Identify gaps between residues
+    pdbchecker.get_gaps(u)

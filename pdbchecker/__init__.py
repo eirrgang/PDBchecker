@@ -2,6 +2,10 @@ import bioservices
 import tempfile
 import MDAnalysis as mda
 import json
+import numpy
+import numpy as np
+
+THRESHOLD = 4.5   # Threshold for identifiction of a gap in residues
 
 def get_PDB_universe(molecule):
   s = bioservices.PDB()
@@ -44,3 +48,18 @@ def get_polar_acceptor(u):
     selector = ' or '.join(['(resname {} and name {})'.format(pair[0], pair[1]) for pair in types['Polar Acceptor']])
     selection = u.atoms.select_atoms(selector)
     return selection
+
+def get_gaps(u):
+  ca = u.atoms.select_atoms('name CA')
+
+  for c1 in ca.atoms:
+      found = False
+      for c2 in ca.atoms:
+          if c2.residue.resnum-c1.residue.resnum > 0 and not(found):
+              found = True
+              p1 = c1.position
+              p2 = c2.position
+              dist_ca = np.linalg.norm(p1-p2)
+              if (dist_ca > THRESHOLD):
+                  print "Residue Gap between residues:", c1.residue.resnum, c2.residue.resnum, dist_ca
+              

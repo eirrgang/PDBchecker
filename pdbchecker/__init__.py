@@ -1,5 +1,6 @@
-import bioservices
+from ftplib import FTP
 import tempfile
+import gzip
 import MDAnalysis as mda
 import json
 import numpy
@@ -7,14 +8,35 @@ import numpy as np
 
 THRESHOLD = 4.5   # Threshold for identifiction of a gap in residues
 
-def get_PDB_universe(molecule):
-  s = bioservices.PDB()
-  res = s.get_file("1aki", 'pdb')
+def get_PDB_universe(pdbcode):
+  # Get file from PDB
+  filename = 'pdb'+str(pdbcode)+'.ent.gz'
+  ftp = FTP('ftp.wwpdb.org')
+  ftp.login()
+  ftp.cwd('pub/pdb/data/structures/all/pdb')
+  gzipfile = tempfile.NamedTemporaryFile(suffix='.gz')
+  ftp.retrbinary('RETR {}'.format(filename), gzipfile.write)
+  ftp.quit()
 
-  fh = tempfile.NamedTemporaryFile(suffix='.pdb')
-  fh.write(res)
+  # unzip PDB file
+  gzipfile.seek(0)
+  with gzip.GzipFile(pdbcode, 'rb', 0, gzipfile) as unzipper:
+    pdbcontent = unzipper.read()
+  gzipfile.close()
 
+  with open('temp.pdb', mode='w') as test:
+    test.write(pdbcontent)
+
+  # Is there no way to create a Universe directly from a text object?
+  fh = tempfile.NamedTemporaryFile(suffix='.pdb', mode='w')
+  fh.write(pdbcontent)
+  fh.flush()
+
+  # create universe
   u = mda.Universe(fh.name)
+
+  # clean up and return
+  fh.close()
   return u
 
 def get_apolar(u):

@@ -1,4 +1,5 @@
 from ftplib import FTP
+from StringIO import StringIO
 import tempfile
 import gzip
 import MDAnalysis as mda
@@ -14,18 +15,15 @@ def get_PDB_universe(pdbcode):
   ftp = FTP('ftp.wwpdb.org')
   ftp.login()
   ftp.cwd('pub/pdb/data/structures/all/pdb')
-  gzipfile = tempfile.NamedTemporaryFile(suffix='.gz')
+  gzipfile = StringIO() # buffer for retrieved file
   ftp.retrbinary('RETR {}'.format(filename), gzipfile.write)
   ftp.quit()
 
   # unzip PDB file
-  gzipfile.seek(0)
+  gzipfile.seek(0) # reset StringIO object for reading
   with gzip.GzipFile(pdbcode, 'rb', 0, gzipfile) as unzipper:
     pdbcontent = unzipper.read()
   gzipfile.close()
-
-  with open('temp.pdb', mode='w') as test:
-    test.write(pdbcontent)
 
   # Is there no way to create a Universe directly from a text object?
   fh = tempfile.NamedTemporaryFile(suffix='.pdb', mode='w')
